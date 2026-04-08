@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: exam-system
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        fromDatabase:
+          name: exam-system-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: exam-system-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: exam-system-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: exam-system-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: exam-system-db
+          property: database
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+databases:
+  - name: exam-system-db
+    plan: free

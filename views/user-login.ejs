@@ -1,0 +1,63 @@
+<%- include('partials/header') %>
+
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h2>STUDENT<span class="gold-text">PORTAL</span></h2>
+                </div>
+                <h3>Welcome Back!</h3>
+                <p>Login to access your examinations</p>
+            </div>
+
+            <div class="auth-body">
+                <% if (error) { %>
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> <%= error %>
+                    </div>
+                <% } %>
+
+                <form action="/user/login" method="POST">
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               placeholder="Enter your college email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="Enter your password" required>
+                    </div>
+
+                    <button type="submit" class="btn-auth">
+                        <i class="fas fa-sign-in-alt"></i> Login to Student Portal
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>First time? <a href="/register">Create an Account</a></p>
+                    <a href="/" class="back-home">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-decoration">
+            <div class="decoration-text">
+                <i class="fas fa-quote-left"></i>
+                <p>Education is the most powerful weapon which you can use to change the world.</p>
+                <span>- Nelson Mandela</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer-simple') %>

@@ -1,0 +1,136 @@
+<%- include('../partials/header') %>
+
+<style>
+    .exam-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .timer-card {
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: white;
+        border-radius: 50px;
+        padding: 15px 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        border: 2px solid var(--gold);
+        z-index: 1000;
+    }
+    .timer {
+        font-size: 28px;
+        font-weight: bold;
+        color: var(--maroon);
+    }
+    .question-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border: 1px solid rgba(128,0,32,0.1);
+    }
+    .question-text {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--maroon);
+        margin-bottom: 20px;
+    }
+    .option-label {
+        display: block;
+        padding: 12px 15px;
+        margin: 10px 0;
+        background: var(--cream);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(128,0,32,0.1);
+    }
+    .option-label:hover {
+        background: rgba(212,175,55,0.1);
+        border-color: var(--gold);
+    }
+    input[type="radio"] {
+        margin-right: 10px;
+    }
+    .nav-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+    }
+    .btn-submit {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 25px;
+        font-weight: 600;
+    }
+</style>
+
+<div class="exam-container">
+    <div class="timer-card">
+        <i class="fas fa-hourglass-half" style="color: var(--gold);"></i>
+        <span class="timer" id="timer">00:00</span>
+    </div>
+
+    <h2 style="color: var(--maroon);"><%= exam.title %></h2>
+    <p><%= exam.description %></p>
+
+    <form id="examForm" action="/user/exam/submit" method="POST">
+        <input type="hidden" name="examId" value="<%= exam.id %>">
+
+        <% questions.forEach((question, index) => { %>
+            <div class="question-card">
+                <div class="question-text">
+                    <strong>Q<%= index + 1 %>.</strong> <%= question.question_text %>
+                </div>
+                <div class="options">
+                    <label class="option-label">
+                        <input type="radio" name="answers[<%= question.id %>]" value="A">
+                        <strong>A.</strong> <%= question.option_a %>
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="answers[<%= question.id %>]" value="B">
+                        <strong>B.</strong> <%= question.option_b %>
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="answers[<%= question.id %>]" value="C">
+                        <strong>C.</strong> <%= question.option_c %>
+                    </label>
+                    <label class="option-label">
+                        <input type="radio" name="answers[<%= question.id %>]" value="D">
+                        <strong>D.</strong> <%= question.option_d %>
+                    </label>
+                </div>
+            </div>
+        <% }); %>
+
+        <div class="nav-buttons">
+            <button type="button" class="btn-back" onclick="window.location.href='/user/dashboard'">Cancel</button>
+            <button type="submit" class="btn-submit">Submit Exam</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    let timeLeft = <%= exam.duration %> * 60;
+    const timerDisplay = document.getElementById('timer');
+
+    function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('examForm').submit();
+        }
+        timeLeft--;
+    }
+
+    const timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+</script>
+
+<%- include('../partials/footer') %>

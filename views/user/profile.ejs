@@ -1,0 +1,377 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar', { user: user }) %>
+
+<div class="profile-container">
+    <!-- Profile Header Card -->
+    <div class="profile-header-card">
+        <div class="profile-avatar">
+            <div class="avatar-circle">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="profile-info">
+                <h2><%= user.name %></h2>
+                <div class="profile-email"><i class="fas fa-envelope"></i> <%= user.email %></div>
+                <div class="profile-stats">
+                    <div class="profile-stat">
+                        <div class="stat-value" id="totalExamsStat">0</div>
+                        <div class="stat-label">Exams Taken</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="stat-value" id="avgScoreStat">0%</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="stat-value" id="rankStat">-</div>
+                        <div class="stat-label">Your Rank</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Personal Information -->
+    <div class="profile-card">
+        <div class="profile-card-header">
+            <h4><i class="fas fa-user-circle"></i> Personal Information</h4>
+        </div>
+        <div class="profile-card-body">
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-user"></i> Full Name</div>
+                <div class="info-value"><%= user.name %></div>
+            </div>
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-envelope"></i> Email Address</div>
+                <div class="info-value"><%= user.email %></div>
+            </div>
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-calendar-alt"></i> Member Since</div>
+                <div class="info-value" id="memberSince">Loading...</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label"><i class="fas fa-clock"></i> Last Login</div>
+                <div class="info-value" id="lastLogin">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Statistics -->
+    <div class="profile-card">
+        <div class="profile-card-header">
+            <h4><i class="fas fa-chart-line"></i> Performance Overview</h4>
+        </div>
+        <div class="profile-card-body">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" id="avgScore">0%</div>
+                    <div class="stat-title">Average Score</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="bestScore">0%</div>
+                    <div class="stat-title">Best Score</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="worstScore">0%</div>
+                    <div class="stat-title">Worst Score</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="passingRate">0%</div>
+                    <div class="stat-title">Passing Rate</div>
+                </div>
+            </div>
+
+            <!-- Performance Chart -->
+            <div class="chart-container">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam History -->
+    <div class="profile-card">
+        <div class="profile-card-header">
+            <h4><i class="fas fa-history"></i> Exam History</h4>
+        </div>
+        <div class="profile-card-body">
+            <div id="examHistory"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Exam Details Modal -->
+<div class="modal fade" id="examDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-alt"></i> Exam Details</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="examDetailsBody">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-back" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    let performanceChart = null;
+
+    async function loadProfileData() {
+        try {
+            const response = await fetch('/user/api/profile');
+            const data = await response.json();
+
+            // Update profile info
+            document.getElementById('memberSince').innerText = data.member_since || 'N/A';
+            document.getElementById('lastLogin').innerText = data.last_login || 'Never';
+            document.getElementById('totalExamsStat').innerText = data.total_exams || 0;
+            document.getElementById('avgScoreStat').innerText = Math.round(data.avg_score || 0) + '%';
+            document.getElementById('rankStat').innerText = data.rank || '-';
+
+            // Update performance stats
+            document.getElementById('avgScore').innerText = Math.round(data.avg_score || 0) + '%';
+            document.getElementById('bestScore').innerText = Math.round(data.best_score || 0) + '%';
+            document.getElementById('worstScore').innerText = Math.round(data.worst_score || 0) + '%';
+
+            // Calculate passing rate
+            const passedExams = data.exam_history ? data.exam_history.filter(e => e.percentage >= 60).length : 0;
+            const passingRate = data.exam_history && data.exam_history.length > 0 ? (passedExams / data.exam_history.length * 100) : 0;
+            document.getElementById('passingRate').innerText = Math.round(passingRate) + '%';
+
+            // Create performance chart
+            createPerformanceChart(data.scores_history);
+
+            // Display exam history
+            displayExamHistory(data.exam_history);
+        } catch (error) {
+            console.error('Error loading profile:', error);
+        }
+    }
+
+    function createPerformanceChart(scoresHistory) {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+
+        const labels = scoresHistory ? scoresHistory.map(s => s.exam_name) : [];
+        const scores = scoresHistory ? scoresHistory.map(s => s.percentage) : [];
+
+        if (performanceChart) {
+            performanceChart.destroy();
+        }
+
+        performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Your Score (%)',
+                    data: scores,
+                    backgroundColor: 'rgba(212,175,55,0.1)',
+                    borderColor: '#D4AF37',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#0A1929',
+                    pointBorderColor: '#D4AF37',
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Score: ' + context.raw + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Score (%)',
+                            font: { size: 12 }
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Exams',
+                            font: { size: 12 }
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function displayExamHistory(examHistory) {
+        const container = document.getElementById('examHistory');
+        if (!examHistory || examHistory.length === 0) {
+            container.innerHTML = `
+                <div class="text-center p-5">
+                    <i class="fas fa-folder-open fa-3x" style="color: var(--gold); opacity: 0.5;"></i>
+                    <p class="mt-3">No exams taken yet. Start your first exam!</p>
+                    <a href="/user/dashboard" class="btn-gold mt-2">Browse Exams</a>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < examHistory.length; i++) {
+            const exam = examHistory[i];
+            const percentage = Math.round(exam.percentage);
+            let scoreColor, scoreMessage;
+
+            if (percentage >= 80) {
+                scoreColor = '#28a745';
+                scoreMessage = 'Excellent! 🎉';
+            } else if (percentage >= 60) {
+                scoreColor = '#17a2b8';
+                scoreMessage = 'Good Job! 👍';
+            } else if (percentage >= 40) {
+                scoreColor = '#ffc107';
+                scoreMessage = 'Need Improvement 📚';
+            } else {
+                scoreColor = '#dc3545';
+                scoreMessage = 'Keep Practicing 💪';
+            }
+
+            html += `
+                <div class="exam-history-item" onclick="viewExamDetails(${exam.exam_id})">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <div>
+                            <div class="exam-title">${exam.exam_title}</div>
+                            <div class="exam-date">
+                                <i class="fas fa-calendar-alt"></i> ${new Date(exam.submitted_at).toLocaleDateString()}
+                                ${exam.attempt_number ? `<span class="ml-2"><i class="fas fa-repeat"></i> Attempt ${exam.attempt_number}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="score-badge" style="background: ${scoreColor}15; color: ${scoreColor}; border: 1px solid ${scoreColor}30;">
+                                ${percentage}% - ${scoreMessage}
+                            </div>
+                            <div class="exam-date mt-1">
+                                <i class="fas fa-trophy"></i> Score: ${exam.score}/${exam.total_marks}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="progress">
+                            <div class="progress-bar-custom" style="width: ${percentage}%; background: ${scoreColor}; height: 6px;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+    }
+
+    async function viewExamDetails(examId) {
+        try {
+            const response = await fetch(`/user/api/exam-details/${examId}`);
+            const data = await response.json();
+
+            let answersHtml = '';
+            for (let i = 0; i < data.answers.length; i++) {
+                const ans = data.answers[i];
+                const isCorrect = ans.is_correct;
+
+                answersHtml += `
+                    <div style="padding: 15px; margin: 10px 0; background: var(--cream); border-radius: 12px; border-left: 4px solid ${isCorrect ? '#28a745' : '#dc3545'}">
+                        <div><strong>Q${i + 1}. ${ans.question_text}</strong></div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <small><strong>Your Answer:</strong>
+                                    <span style="color: ${isCorrect ? '#28a745' : '#dc3545'}">
+                                        ${ans.selected_answer ? ans.selected_answer + '. ' + ans['option_' + ans.selected_answer.toLowerCase()] : 'Not answered'}
+                                    </span>
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <small><strong>Correct Answer:</strong>
+                                    ${ans.correct_answer}. ${ans['option_' + ans.correct_answer.toLowerCase()]}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge ${isCorrect ? 'badge-success' : 'badge-danger'}" style="background: ${isCorrect ? '#28a745' : '#dc3545'}; color: white; padding: 4px 12px; border-radius: 20px;">
+                                <i class="fas fa-${isCorrect ? 'check-circle' : 'times-circle'}"></i>
+                                ${isCorrect ? 'Correct' : 'Incorrect'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const modalBody = `
+                <div style="background: linear-gradient(135deg, var(--cream), var(--cream-dark)); padding: 20px; border-radius: 16px; margin-bottom: 20px;">
+                    <h5 style="color: var(--navy);">${data.exam_title}</h5>
+                    <p style="color: var(--gray);">${data.exam_description || ''}</p>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div style="font-size: 28px; font-weight: bold; color: var(--navy);">${data.score}/${data.total_marks}</div>
+                                <small class="text-muted">Your Score</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div style="font-size: 28px; font-weight: bold; color: var(--gold);">${Math.round(data.percentage)}%</div>
+                                <small class="text-muted">Percentage</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div style="font-size: 28px; font-weight: bold; color: var(--navy);">${data.attempt_number || 1}</div>
+                                <small class="text-muted">Attempt #</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <small><i class="fas fa-calendar"></i> Submitted: ${new Date(data.submitted_at).toLocaleString()}</small>
+                    </div>
+                </div>
+                <h6 style="color: var(--navy); margin-bottom: 15px;"><i class="fas fa-question-circle"></i> Question-wise Analysis</h6>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    ${answersHtml}
+                </div>
+            `;
+
+            document.getElementById('examDetailsBody').innerHTML = modalBody;
+            $('#examDetailsModal').modal('show');
+        } catch (error) {
+            console.error('Error loading exam details:', error);
+            alert('Error loading exam details');
+        }
+    }
+
+    loadProfileData();
+</script>
+
+<%- include('../partials/footer') %>

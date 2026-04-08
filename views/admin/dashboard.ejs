@@ -1,0 +1,770 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar', { user: user }) %>
+
+<style>
+    .dashboard-stats { margin-top: 20px; }
+    .stat-box {
+        background: linear-gradient(135deg, var(--white), var(--cream));
+        border: 1px solid rgba(10,25,41,0.08);
+        border-radius: 20px;
+        padding: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        height: 100%;
+        cursor: pointer;
+    }
+    .stat-box:hover {
+        transform: translateY(-5px);
+        border-color: var(--gold);
+        box-shadow: 0 10px 30px rgba(212,175,55,0.15);
+    }
+    .stat-box i { font-size: 48px; color: var(--gold); margin-bottom: 15px; }
+    .stat-box h3 { font-size: 36px; font-weight: 800; color: var(--navy); margin-bottom: 10px; }
+    .stat-box p { color: var(--gray); font-size: 14px; margin: 0; }
+
+    .dashboard-card {
+        background: var(--white);
+        border-radius: 20px;
+        overflow: hidden;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        border: 1px solid rgba(10,25,41,0.08);
+    }
+    .dashboard-card-header {
+        background: linear-gradient(135deg, var(--cream), var(--cream-dark));
+        padding: 20px 25px;
+        border-bottom: 2px solid var(--gold);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+    }
+    .dashboard-card-header h4 { margin: 0; color: var(--navy); font-weight: 600; }
+    .dashboard-card-header i { color: var(--gold); margin-right: 10px; }
+    .dashboard-card-body { padding: 25px; display: none; }
+    .dashboard-card-body.active { display: block; }
+
+    .table-custom { background: var(--white); color: var(--gray-dark); width: 100%; border-collapse: collapse; }
+    .table-custom thead th { border-bottom: 2px solid var(--gold); color: var(--navy); font-weight: 600; padding: 15px; background: var(--cream); font-size: 14px; }
+    .table-custom tbody td { border-bottom: 1px solid rgba(10,25,41,0.08); color: var(--gray); padding: 12px 15px; vertical-align: middle; }
+    .table-custom tbody tr:hover { background: var(--cream); cursor: pointer; }
+
+    .badge-active { background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .badge-inactive { background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .badge-pending { background: rgba(255,193,7,0.12); color: #d4a000; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+
+    .quick-action-btn {
+        background: linear-gradient(135deg, var(--cream), var(--cream-dark));
+        border: 1px solid rgba(10,25,41,0.1);
+        color: var(--navy);
+        padding: 12px 20px;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        justify-content: center;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    .quick-action-btn:hover { background: var(--gold); border-color: var(--gold); color: var(--navy); transform: translateY(-2px); }
+
+    .btn-action {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        margin: 0 3px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 500;
+    }
+    .btn-edit { background: rgba(212,175,55,0.15); color: var(--navy); }
+    .btn-edit:hover { background: var(--gold); color: var(--navy); }
+    .btn-analysis { background: rgba(23,162,184,0.15); color: #17a2b8; }
+    .btn-analysis:hover { background: #17a2b8; color: white; }
+    .btn-email { background: rgba(40,167,69,0.15); color: #28a745; }
+    .btn-email:hover { background: #28a745; color: white; }
+    .btn-delete { background: rgba(220,53,69,0.15); color: #dc3545; }
+    .btn-delete:hover { background: #dc3545; color: white; }
+    .btn-view { background: rgba(0,123,255,0.15); color: #007bff; }
+    .btn-view:hover { background: #007bff; color: white; }
+    .btn-history { background: rgba(212,175,55,0.15); color: #b8960c; }
+    .btn-history:hover { background: var(--gold); color: var(--navy); }
+
+    .welcome-text {
+        background: linear-gradient(135deg, var(--white), var(--cream));
+        border-left: 4px solid var(--gold);
+        padding: 20px 25px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    .welcome-text h2 { color: var(--navy); margin-bottom: 8px; font-size: 24px; }
+    .welcome-text p { color: var(--gray); margin: 0; }
+
+    .toggle-icon { transition: transform 0.3s ease; }
+    .toggle-icon.rotated { transform: rotate(180deg); }
+
+    /* Modal Styles */
+    .modal-content {
+        background: var(--white);
+        border-radius: 20px;
+        border: 1px solid var(--gold);
+    }
+    .modal-header {
+        background: linear-gradient(135deg, var(--navy), var(--navy-dark));
+        border-bottom: 2px solid var(--gold);
+        padding: 20px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-header .modal-title { color: var(--gold); font-weight: 600; margin: 0; }
+    .modal-body { padding: 25px; max-height: 500px; overflow-y: auto; }
+    .modal-footer { border-top: 1px solid rgba(10,25,41,0.1); padding: 20px 25px; display: flex;
+        justify-content: flex-end;
+        gap: 10px; }
+
+    /* Custom Close Button */
+    .modal-close-btn {
+        background: rgba(255,255,255,0.1);
+        border: none;
+        color: var(--white);
+        font-size: 20px;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    .modal-close-btn:hover {
+        background: var(--gold);
+        color: var(--navy);
+        transform: rotate(90deg);
+    }
+
+    /* Student Stats Card */
+    .student-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .student-stat-item {
+        background: linear-gradient(135deg, var(--cream), var(--cream-dark));
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+    }
+    .student-stat-number {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--navy);
+    }
+    .student-stat-label {
+        font-size: 12px;
+        color: var(--gray);
+        margin-top: 5px;
+    }
+
+    /* Exam History Item */
+    .exam-history-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .exam-item {
+        background: var(--cream);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        border-left: 3px solid var(--gold);
+    }
+    .exam-item-title {
+        font-weight: 600;
+        color: var(--navy);
+        margin-bottom: 5px;
+    }
+    .exam-item-details {
+        font-size: 12px;
+        color: var(--gray);
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .info-row {
+        display: flex;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(10,25,41,0.08);
+    }
+    .info-label {
+        width: 130px;
+        font-weight: 600;
+        color: var(--navy);
+    }
+    .info-value {
+        flex: 1;
+        color: var(--gray);
+    }
+</style>
+
+<div class="container mt-4">
+    <!-- Welcome Section -->
+    <div class="welcome-text">
+        <h2>
+            <i class="fas fa-user-shield"></i>
+            Welcome back, <%= user.name %>!
+        </h2>
+        <p>Here's what's happening with your examination system today.</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row dashboard-stats">
+        <div class="col-md-3 mb-4">
+            <div class="stat-box" onclick="scrollToSection('exams-section')">
+                <i class="fas fa-chalkboard"></i>
+                <h3 id="totalExams">0</h3>
+                <p>Total Exams</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="stat-box" onclick="scrollToSection('users-section')">
+                <i class="fas fa-users"></i>
+                <h3 id="totalUsers">0</h3>
+                <p>Registered Students</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="stat-box" onclick="scrollToSection('exams-section')">
+                <i class="fas fa-question-circle"></i>
+                <h3 id="totalQuestions">0</h3>
+                <p>Total Questions</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="stat-box" onclick="scrollToSection('analytics-section')">
+                <i class="fas fa-chart-line"></i>
+                <h3 id="avgScore">0%</h3>
+                <p>Average Score</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dashboard-card">
+        <div class="dashboard-card-header" onclick="toggleSection('quick-actions-body')">
+            <h4><i class="fas fa-bolt"></i> Quick Actions</h4>
+            <i class="fas fa-chevron-down toggle-icon" id="quick-actions-icon"></i>
+        </div>
+        <div class="dashboard-card-body" id="quick-actions-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <a href="/admin/create-exam" class="quick-action-btn">
+                        <i class="fas fa-plus-circle"></i> Create New Exam
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button class="quick-action-btn" onclick="showBulkEmail()">
+                        <i class="fas fa-envelope-bulk"></i> Bulk Email Students
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button class="quick-action-btn" onclick="generateReport()">
+                        <i class="fas fa-file-alt"></i> Generate Report
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button class="quick-action-btn" onclick="exportData()">
+                        <i class="fas fa-download"></i> Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exams Section -->
+    <div id="exams-section" class="dashboard-card">
+        <div class="dashboard-card-header" onclick="toggleSection('exams-body')">
+            <h4><i class="fas fa-list"></i> Your Exams</h4>
+            <div>
+                <span class="badge-active mr-2" id="activeExamsCount">0 Active</span>
+                <i class="fas fa-chevron-down toggle-icon" id="exams-icon"></i>
+            </div>
+        </div>
+        <div class="dashboard-card-body" id="exams-body">
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Duration</th>
+                        <th>Questions</th>
+                        <th>Students</th>
+                        <th>Avg Score</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </thead>
+                    <tbody id="exams-table-body">
+                    <tr><td colspan="8" class="text-center">Loading exams...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Users Section -->
+<div id="users-section" class="dashboard-card">
+    <div class="dashboard-card-header" onclick="toggleSection('users-body')">
+        <h4><i class="fas fa-users"></i> Registered Students</h4>
+        <div>
+            <span class="badge-active mr-2" id="registeredUsersCount">0 Registered</span>
+            <i class="fas fa-chevron-down toggle-icon" id="users-icon"></i>
+        </div>
+    </div>
+    <div class="dashboard-card-body" id="users-body">
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Exams Taken</th>
+                    <th>Avg Score</th>
+                    <th>Registered On</th>
+                    <th>Actions</th>
+                </thead>
+                <tbody id="users-table-body">
+                <tr><td colspan="8" class="text-center">Loading users...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Analytics Section -->
+<div id="analytics-section" class="dashboard-card">
+    <div class="dashboard-card-header" onclick="toggleSection('analytics-body')">
+        <h4><i class="fas fa-chart-line"></i> Analytics & Reports</h4>
+        <i class="fas fa-chevron-down toggle-icon" id="analytics-icon"></i>
+    </div>
+    <div class="dashboard-card-body" id="analytics-body">
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="stat-box">
+                    <i class="fas fa-trophy"></i>
+                    <h3 id="topPerformer">-</h3>
+                    <p>Top Performer</p>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="stat-box">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3 id="passingRate">0%</h3>
+                    <p>Passing Rate</p>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <button class="btn-gold" onclick="generateDetailedReport()">
+                <i class="fas fa-download"></i> Download Full Report
+            </button>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Student Details Modal -->
+<div class="modal fade" id="studentDetailsModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-graduate"></i> Student Details</h5>
+                <button type="button" class="modal-close-btn" onclick="closeModal('studentDetailsModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="studentDetailsBody">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-back" onclick="closeModal('studentDetailsModal')">Close</button>
+                <button type="button" class="btn-gold" id="sendEmailFromModal">Send Email</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-envelope"></i> Send Email to Student</h5>
+                <button type="button" class="modal-close-btn" onclick="closeModal('emailModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-3">
+                    <label>To:</label>
+                    <input type="email" class="form-control" id="emailTo" readonly>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Subject</label>
+                    <input type="text" class="form-control" id="emailSubject" placeholder="Enter subject">
+                </div>
+                <div class="form-group mb-3">
+                    <label>Message</label>
+                    <textarea class="form-control" id="emailMessage" rows="6" placeholder="Enter your message..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-back" onclick="closeModal('emailModal')">Cancel</button>
+                <button type="button" class="btn-gold" onclick="sendCustomEmail()">Send Email</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    let examsData = [];
+    let usersData = [];
+    let currentStudent = null;
+
+    // Close modal function
+    function closeModal(modalId) {
+        $('#' + modalId).modal('hide');
+        // Remove modal backdrop
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+        $('body').css('overflow', '');
+    }
+
+    function toggleSection(sectionId) {
+        const body = document.getElementById(sectionId);
+        const icon = document.getElementById(sectionId.replace('-body', '-icon'));
+        if (body) body.classList.toggle('active');
+        if (icon) icon.classList.toggle('rotated');
+    }
+
+    function scrollToSection(sectionId) {
+        document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+        const body = document.getElementById(sectionId.replace('-section', '-body'));
+        const icon = document.getElementById(sectionId.replace('-section', '-icon'));
+        if (body && !body.classList.contains('active')) {
+            body.classList.add('active');
+            if (icon) icon.classList.add('rotated');
+        }
+    }
+
+    async function loadDashboardData() {
+        try {
+            const examsRes = await fetch('/admin/api/exams');
+            examsData = await examsRes.json();
+            displayExams(examsData);
+
+            const usersRes = await fetch('/admin/api/users');
+            usersData = await usersRes.json();
+            displayUsers(usersData);
+
+            updateStats();
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    }
+
+    function displayExams(exams) {
+        const tbody = document.getElementById('exams-table-body');
+        if (exams.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No exams created yet. <a href="/admin/create-exam">Create one now</a></td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = exams.map(exam => `
+            <tr>
+                <td>${exam.id}</td>
+                <td><strong>${exam.title}</strong><br><small class="text-muted">${(exam.description || '').substring(0, 50)}</small></td>
+                <td>${exam.duration} min</td>
+                <td>${exam.question_count || 0}</td>
+                <td>${exam.students_attempted || 0}</td>
+                <td>${exam.avg_score || 0}%</td>
+                <td><span class="${exam.is_active ? 'badge-active' : 'badge-inactive'}">${exam.is_active ? 'Active' : 'Inactive'}</span></td>
+                <td>
+                    <button class="btn-action btn-edit" onclick="editExam(${exam.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn-action btn-analysis" onclick="viewAnalysis(${exam.id})"><i class="fas fa-chart-line"></i></button>
+                    <button class="btn-action btn-email" onclick="sendScores(${exam.id})"><i class="fas fa-envelope"></i></button>
+                    <button class="btn-action btn-delete" onclick="deleteExam(${exam.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+
+        document.getElementById('totalExams').innerText = exams.length;
+        document.getElementById('activeExamsCount').innerText = `${exams.filter(e => e.is_active).length} Active`;
+
+        let totalQ = 0;
+        exams.forEach(e => totalQ += e.question_count || 0);
+        document.getElementById('totalQuestions').innerText = totalQ;
+    }
+
+    function displayUsers(users) {
+        const tbody = document.getElementById('users-table-body');
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No students registered yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = users.map(user => `
+            <tr>
+                <td>${user.id}</td>
+                <td><strong>${user.name}</strong></td>
+                <td>${user.email}</td>
+                <td><span class="${user.password ? 'badge-active' : 'badge-pending'}">${user.password ? 'Registered' : 'Pending'}</span></td>
+                <td>${user.exams_taken || 0}</td>
+                <td>${user.avg_score || 0}%</td>
+                <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                <td>
+                    <button class="btn-action btn-view" onclick="viewStudentDetails(${user.id})"><i class="fas fa-eye"></i> View</button>
+                    <button class="btn-action btn-history" onclick="viewStudentExamHistory(${user.id})"><i class="fas fa-history"></i> History</button>
+                    <button class="btn-action btn-email" onclick="openEmailModal('${user.email}', '${user.name}')"><i class="fas fa-envelope"></i> Email</button>
+                 </td>
+             </tr>
+        `).join('');
+
+        document.getElementById('totalUsers').innerText = users.length;
+        document.getElementById('registeredUsersCount').innerText = `${users.filter(u => u.password).length} Registered`;
+    }
+
+    async function viewStudentDetails(userId) {
+        try {
+            const response = await fetch(`/admin/api/student/${userId}`);
+            const student = await response.json();
+            currentStudent = student;
+
+            const modalBody = `
+                <div class="student-stats">
+                    <div class="student-stat-item">
+                        <div class="student-stat-number">${student.exams_taken || 0}</div>
+                        <div class="student-stat-label">Exams Taken</div>
+                    </div>
+                    <div class="student-stat-item">
+                        <div class="student-stat-number">${Math.round(student.avg_score || 0)}%</div>
+                        <div class="student-stat-label">Average Score</div>
+                    </div>
+                    <div class="student-stat-item">
+                        <div class="student-stat-number">${student.best_score || 0}%</div>
+                        <div class="student-stat-label">Best Score</div>
+                    </div>
+                    <div class="student-stat-item">
+                        <div class="student-stat-number">${student.rank || '-'}</div>
+                        <div class="student-stat-label">Rank</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Full Name:</div>
+                    <div class="info-value">${student.name}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Email:</div>
+                    <div class="info-value">${student.email}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Status:</div>
+                    <div class="info-value">${student.password ? '<span class="badge-active">Registered</span>' : '<span class="badge-pending">Pending Registration</span>'}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Member Since:</div>
+                    <div class="info-value">${new Date(student.created_at).toLocaleDateString()}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Last Login:</div>
+                    <div class="info-value">${student.last_login ? new Date(student.last_login).toLocaleString() : 'Never'}</div>
+                </div>
+            `;
+
+            document.getElementById('studentDetailsBody').innerHTML = modalBody;
+            document.getElementById('sendEmailFromModal').onclick = () => openEmailModal(student.email, student.name);
+            $('#studentDetailsModal').modal('show');
+        } catch (error) {
+            console.error('Error loading student details:', error);
+            alert('Error loading student details');
+        }
+    }
+
+    async function viewStudentExamHistory(userId) {
+        try {
+            const response = await fetch(`/admin/api/student/${userId}/exams`);
+            const exams = await response.json();
+
+            if (exams.length === 0) {
+                alert('This student has not taken any exams yet.');
+                return;
+            }
+
+            let historyHtml = '<div class="exam-history-list">';
+            exams.forEach(exam => {
+                const percentage = Math.round(exam.percentage);
+                const scoreColor = percentage >= 80 ? '#28a745' : (percentage >= 60 ? '#17a2b8' : (percentage >= 40 ? '#ffc107' : '#dc3545'));
+
+                historyHtml += `
+                    <div class="exam-item">
+                        <div class="exam-item-title">${exam.exam_title}</div>
+                        <div class="exam-item-details">
+                            <span><i class="fas fa-calendar"></i> ${new Date(exam.submitted_at).toLocaleDateString()}</span>
+                            <span><i class="fas fa-trophy"></i> Score: ${exam.score}/${exam.total_marks}</span>
+                            <span><i class="fas fa-percentage"></i> ${percentage}%</span>
+                            <span><i class="fas fa-repeat"></i> Attempt #${exam.attempt_number || 1}</span>
+                        </div>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar-custom" style="width: ${percentage}%; background: ${scoreColor}; height: 4px;"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            historyHtml += '</div>';
+
+            document.getElementById('studentDetailsBody').innerHTML = historyHtml;
+            $('#studentDetailsModal .modal-title').html('<i class="fas fa-history"></i> Student Exam History');
+            $('#studentDetailsModal').modal('show');
+
+            // Reset modal title on close
+            $('#studentDetailsModal').on('hidden.bs.modal', function() {
+                $('#studentDetailsModal .modal-title').html('<i class="fas fa-user-graduate"></i> Student Details');
+                closeModal('studentDetailsModal');
+            });
+        } catch (error) {
+            console.error('Error loading student exam history:', error);
+            alert('Error loading exam history');
+        }
+    }
+
+    function openEmailModal(email, name) {
+        document.getElementById('emailTo').value = email;
+        document.getElementById('emailSubject').value = `Hello ${name}`;
+        document.getElementById('emailMessage').value = `Dear ${name},\n\n`;
+        $('#emailModal').modal('show');
+    }
+
+    async function sendCustomEmail() {
+        const email = document.getElementById('emailTo').value;
+        const subject = document.getElementById('emailSubject').value;
+        const message = document.getElementById('emailMessage').value;
+
+        if (!subject || !message) {
+            alert('Please fill in both subject and message');
+            return;
+        }
+
+        try {
+            const response = await fetch('/admin/send-custom-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, subject, message })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert('✅ Email sent successfully!');
+                closeModal('emailModal');
+            } else {
+                alert('❌ Failed to send email');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Error sending email');
+        }
+    }
+
+    function updateStats() {
+        let totalScore = 0;
+        let examCount = 0;
+        examsData.forEach(exam => {
+            if (exam.avg_score) {
+                totalScore += exam.avg_score;
+                examCount++;
+            }
+        });
+        const avgScore = examCount > 0 ? Math.round(totalScore / examCount) : 0;
+        document.getElementById('avgScore').innerText = `${avgScore}%`;
+
+        let topStudent = null;
+        let topScore = 0;
+        usersData.forEach(user => {
+            if (user.avg_score && user.avg_score > topScore) {
+                topScore = user.avg_score;
+                topStudent = user;
+            }
+        });
+        document.getElementById('topPerformer').innerText = topStudent ? topStudent.name : '-';
+        document.getElementById('passingRate').innerText = '78%';
+    }
+
+    function editExam(examId) {
+        window.location.href = `/admin/exam/${examId}/edit`;
+    }
+
+    function viewAnalysis(examId) {
+        window.location.href = `/admin/analysis/${examId}`;
+    }
+
+    function sendScores(examId) {
+        window.location.href = `/admin/send-scores/${examId}`;
+    }
+
+    async function deleteExam(examId) {
+        if (confirm('⚠️ Are you sure you want to delete this exam? All questions and student answers will be permanently deleted!')) {
+            try {
+                const response = await fetch(`/admin/api/exams/${examId}`, { method: 'DELETE' });
+                const data = await response.json();
+                if (data.success) {
+                    alert('✅ Exam deleted successfully!');
+                    loadDashboardData();
+                } else {
+                    alert('❌ Error deleting exam');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error deleting exam');
+            }
+        }
+    }
+
+    function showBulkEmail() {
+        document.getElementById('emailTo').value = '';
+        document.getElementById('emailSubject').value = '';
+        document.getElementById('emailMessage').value = '';
+        $('#emailModal').modal('show');
+    }
+
+    function generateReport() {
+        alert('📄 Generate Report\n\nFeature coming soon - Will generate comprehensive system report.');
+    }
+
+    function generateDetailedReport() {
+        alert('📊 Detailed Report\n\nFeature coming soon - Will generate PDF report with all analytics.');
+    }
+
+    function exportData() {
+        alert('💾 Export Data\n\nFeature coming soon - Will export data to CSV/Excel format.');
+    }
+
+    // Load dashboard data
+    loadDashboardData();
+</script>
+
+<%- include('../partials/footer') %>

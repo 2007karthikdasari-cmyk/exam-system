@@ -1,0 +1,68 @@
+<%- include('partials/header') %>
+
+<div class="auth-wrapper admin-auth">
+    <div class="auth-container">
+        <div class="auth-card admin-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fas fa-user-shield"></i>
+                    <h2>ADMIN<span class="gold-text">PORTAL</span></h2>
+                </div>
+                <h3>Administrator Access</h3>
+                <p>Secure login for authorized personnel only</p>
+            </div>
+
+            <div class="auth-body">
+                <% if (error) { %>
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> <%= error %>
+                    </div>
+                <% } %>
+
+                <form action="/admin/login" method="POST">
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> Admin Email
+                        </label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               placeholder="Enter admin email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> Admin Password
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="Enter admin password" required>
+                    </div>
+
+                    <button type="submit" class="btn-auth admin-btn">
+                        <i class="fas fa-shield-alt"></i> Access Admin Panel
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <a href="/" class="back-home">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-decoration admin-decoration">
+            <div class="decoration-text">
+                <i class="fas fa-chart-line"></i>
+                <h4>Admin Features</h4>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Create & Manage Exams</li>
+                    <li><i class="fas fa-check-circle"></i> Question Bank Management</li>
+                    <li><i class="fas fa-check-circle"></i> Real-time Analytics</li>
+                    <li><i class="fas fa-check-circle"></i> Student Performance Tracking</li>
+                    <li><i class="fas fa-check-circle"></i> Email Notifications</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer-simple') %>
